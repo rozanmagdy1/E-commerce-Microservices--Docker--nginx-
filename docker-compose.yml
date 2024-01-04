@@ -1,0 +1,71 @@
+version: "3"
+services:
+  nosql-db:
+    image: mongo
+    ports:
+      - "27018:27017"
+    container_name: nosql-db
+    volumes:
+      - ./db/:/data/db
+  authentication:
+    build:
+      dockerfile: Dockerfile
+      context: ./authentication
+    container_name: authentication
+    ports:
+      - "8001:8001"
+    restart: always
+    depends_on:
+      - "nosql-db"
+    volumes:
+      - .:/app
+      - /app/authentication/node_modules
+
+    env_file:
+      - ./authentication/.env
+  order:
+    build:
+      dockerfile: Dockerfile
+      context: ./order
+    container_name: order
+    ports:
+      - "8002:8002"
+    restart: always
+    depends_on:
+      - "nosql-db"
+    volumes:
+      - .:/app
+      - /app/order/node_modules
+    env_file:
+      - ./order/.env
+  shopping:
+    build:
+      dockerfile: Dockerfile
+      context: ./shopping
+    container_name: shopping
+    ports:
+      - "8003:8003"
+    restart: always
+    depends_on:
+      - "nosql-db"
+
+    volumes:
+      - .:/app/
+      - /app/shopping/node_modules
+    env_file:
+      - ./shopping/.env
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    container_name: redis
+  nginx-proxy:
+    build:
+      dockerfile: Dockerfile
+      context: ./proxy
+    depends_on:
+      - authentication
+      - order
+      - shopping
+    ports:
+      - 80:80
